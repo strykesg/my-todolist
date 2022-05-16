@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Todo</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" ></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.min.js"></script>
+
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 ">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="header-title text-center mb-3">My todo list</h4>
+                        <form action="#" method="GET" id="add-form">
+                            <div class="input-group mb-3">
+                                <input name="task" required type="text" class="form-control" placeholder="New Task...">
+                                <div class="input-group-append">
+                                    <button  class="btn btn-primary" type="submit" id="button-addon2">Add</button>
+                                </div>
+                            </div>
+                        </form>
+                        <div class="todo-list" id="todo-list">
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal" tabindex="-1" id="edit-modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Task</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="" method="POST" id="edit-form">
+                    <div class="modal-body">
+                        <input type="hidden" name="id" id="edit-id">
+                        <input required type="text" name="text" id="edit-text" class="form-control">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        $(window).on('load',function (){
+            updateData();
+        })
+        $(document).ready(function (){
+            $('#add-form').on('submit',function (e){
+               e.preventDefault();
+               $.ajax({
+                  url:'app/add.php',
+                  method:'POST',
+                  data: $(this).serialize(),
+                   success:function (response){
+                        if (response.status){
+                            $('#add-form')[0].reset();
+                            updateData();
+                        }
+                   }
+               });
+            });
+            $(document).on('click','.delete',function (e){
+                e.preventDefault();
+                var id = $(this).data('id');
+                $.ajax({
+                    url:'app/delete.php',
+                    method:'POST',
+                    data:{
+                        id:id
+                    },
+                    success:function (response){
+                        updateData();
+                    }
+                })
+            });
+            $(document).on('submit','#edit-form',function (e){
+                e.preventDefault();
+                $.ajax({
+                    url:'app/edit.php',
+                    method:'POST',
+                    data:$(this).serialize(),
+                    success:function (response){
+                        updateData();
+                        $('#edit-modal').modal('hide');
+                    }
+                });
+            })
+            $(document).on('click','.edit',function (e){
+                e.preventDefault();
+                $('#edit-id').val($(this).data('id'))
+                $('#edit-text').val($(this).data('text'))
+                $('#edit-modal').modal('show');
+            });
+            $(document).on('change','.check-complete',function (){
+               var id = $(this).data('id');
+               $.ajax({
+                   url:'app/check.php',
+                   method:'POST',
+                   data:{
+                       id:id
+                   },
+                   success:function (response){
+
+                   }
+               });
+               if (this.checked){
+                   $(this).parent('span').parent('div').parent('div').children('.titles').addClass('complete');
+               }else{
+                   $(this).parent('span').parent('div').parent('div').children('.titles').removeClass('complete');
+               }
+            });
+        })
+        function updateData(){
+            $.ajax({
+                url:'app/list.php',
+                method:'POST',
+                success:function (response){
+                    var html = '';
+                    if (response.status){
+                        console.log(response)
+                        $.each(response.data,function (key,val){
+                            html +=`<div class="todo-item d-flex justify-content-between">
+                                <div>
+                                    <div class="checker"><span class=""><input data-id="${val.id}"  ${val.checked == 1 ? 'checked':''} type="checkbox" class="check-complete"></span></div>
+                                    <span class="${val.checked == 1 ? 'complete':''} titles">${val.title}</span>
+                                    <a href="javascript:void(0);" class="float-right remove-todo-item"><i class="icon-close"></i></a>
+                                </div>
+                                <div style="min-width: 50px">
+                                    <a data-id="${val.id}" data-text="${val.title}" href="" class="text-warning edit"><i class="fa fa-edit"></i></a>
+                                    <a data-id="${val.id}" href="" class="text-danger delete"><i class="fa fa-trash"></i></a>
+                                </div>
+                            </div>`;
+                        });
+                    }
+                    $('#todo-list').html(html)
+                }
+            });
+        }
+    </script>
+</body>
+</html>
